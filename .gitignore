@@ -1,0 +1,59 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+.conda/
+
+# --- Secrets / environment ---
+.env
+.env.*
+*.key
+*.pem
+secrets.*
+credentials.*
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# --- Model weights (download separately, see weights/README.md) ---
+*.pt
+*.pth
+*.onnx
+*.ckpt
+*.h5
+
+# --- Large data: videos, images, arrays ---
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.jpg
+*.jpeg
+*.png
+*.npz
+*.npy
+
+# --- Generated outputs ---
+data/output/
+data/samples/
+*.log
+
+# --- Exceptions: keep calibration results and debug images ---
+!data/calibration/**
+data/calibration/**/.DS_Store

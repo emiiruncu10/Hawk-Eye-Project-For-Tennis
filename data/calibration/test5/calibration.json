@@ -1,0 +1,300 @@
+{
+  "schema_version": 1,
+  "status": "ok",
+  "method": "auto",
+  "source": "/Users/kadiryalcin/Desktop/test5.mp4",
+  "frame_index": 411,
+  "created_at": "2026-09-06T20:41:14+00:00",
+  "image_size": [
+    1920,
+    1080
+  ],
+  "court_dimensions_m": {
+    "length": 23.77,
+    "width": 10.97,
+    "singles_width": 8.23
+  },
+  "homography_px_to_m": [
+    [
+      -0.007152933486342015,
+      -0.014141091016361358,
+      11.415899295077477
+    ],
+    [
+      -0.0010554379870115213,
+      -0.0819056080752285,
+      36.44567097389449
+    ],
+    [
+      -2.6260057644658763e-05,
+      -0.002750825597725775,
+      1.0
+    ]
+  ],
+  "homography_m_to_px": [
+    [
+      -147.91561408004094,
+      139.14534634874724,
+      -3382.6557560677406
+    ],
+    [
+      -0.7929579207070209,
+      55.24162698534909,
+      -2004.2658334026187
+    ],
+    [
+      -0.006065561498487251,
+      0.15561404638742132,
+      -4.602214494317482
+    ]
+  ],
+  "keypoints_px": [
+    [
+      734.787197199237,
+      434.9718181191067
+    ],
+    [
+      null,
+      null
+    ],
+    [
+      83.06230920710563,
+      765.6756531904192
+    ],
+    [
+      null,
+      null
+    ],
+    [
+      777.8966734458849,
+      435.3925781965715
+    ],
+    [
+      304.95148314634866,
+      758.8589450904179
+    ],
+    [
+      1057.905955461774,
+      438.12554406509145
+    ],
+    [
+      1522.1073553221993,
+      721.4664209508791
+    ],
+    [
+      768.6057405326818,
+      441.7470234391265
+    ],
+    [
+      1047.68454762567,
+      431.88656533697963
+    ],
+    [
+      590.0938513425037,
+      563.8385330433008
+    ],
+    [
+      1244.5198699401624,
+      552.0315990302302
+    ],
+    [
+      918.3004260191819,
+      436.45798630395683
+    ],
+    [
+      920.922004356409,
+      557.8698428303546
+    ]
+  ],
+  "keypoint_source": [
+    "measured",
+    "estimated",
+    "measured",
+    "estimated",
+    "measured",
+    "measured",
+    "measured",
+    "measured",
+    "measured",
+    "measured",
+    "measured",
+    "measured",
+    "measured",
+    "measured"
+  ],
+  "keypoints_world_m": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      10.97,
+      0.0
+    ],
+    [
+      0.0,
+      23.77
+    ],
+    [
+      10.97,
+      23.77
+    ],
+    [
+      1.37,
+      0.0
+    ],
+    [
+      1.37,
+      23.77
+    ],
+    [
+      9.600000000000001,
+      0.0
+    ],
+    [
+      9.600000000000001,
+      23.77
+    ],
+    [
+      1.37,
+      5.484999999999999
+    ],
+    [
+      9.600000000000001,
+      5.484999999999999
+    ],
+    [
+      1.37,
+      18.285
+    ],
+    [
+      9.600000000000001,
+      18.285
+    ],
+    [
+      5.485,
+      5.484999999999999
+    ],
+    [
+      5.485,
+      18.285
+    ]
+  ],
+  "keypoint_names": [
+    "far baseline / doubles left",
+    "far baseline / doubles right",
+    "near baseline / doubles left",
+    "near baseline / doubles right",
+    "far baseline / singles left",
+    "near baseline / singles left",
+    "far baseline / singles right",
+    "near baseline / singles right",
+    "far service line / singles left",
+    "far service line / singles right",
+    "near service line / singles left",
+    "near service line / singles right",
+    "far service line / centre (T)",
+    "near service line / centre (T)"
+  ],
+  "reproj_rmse_px": 0.507456843041454,
+  "n_inliers": 7,
+  "line_support": 0.7301694915254238,
+  "checks": [
+    {
+      "name": "matrix_valid",
+      "passed": true,
+      "detail": "finite=True, det=-1.241e-04",
+      "critical": true
+    },
+    {
+      "name": "matrix_conditioning",
+      "passed": true,
+      "detail": "cond(H)=1.50e+05",
+      "critical": false
+    },
+    {
+      "name": "reprojection_rmse",
+      "passed": true,
+      "detail": "0.51px (limit 6.0px)",
+      "critical": true
+    },
+    {
+      "name": "inlier_count",
+      "passed": true,
+      "detail": "7 inliers (min 4)",
+      "critical": true
+    },
+    {
+      "name": "inlier_count_recommended",
+      "passed": false,
+      "detail": "7 inliers (>= 8 recommended for a stable fit)",
+      "critical": false
+    },
+    {
+      "name": "keypoints_finite",
+      "passed": true,
+      "detail": "all 14 model keypoints project to finite pixels",
+      "critical": true
+    },
+    {
+      "name": "court_in_front_of_camera",
+      "passed": true,
+      "detail": "projective depth has a consistent sign for the whole court",
+      "critical": true
+    },
+    {
+      "name": "far_baseline_is_above",
+      "passed": true,
+      "detail": "far baseline y=433px, near baseline y=743px",
+      "critical": true
+    },
+    {
+      "name": "not_mirrored",
+      "passed": true,
+      "detail": "Jacobian det at court centre = 372.8 (must be > 0)",
+      "critical": true
+    },
+    {
+      "name": "court_quad_convex",
+      "passed": true,
+      "detail": "projected doubles court is a convex quad",
+      "critical": true
+    },
+    {
+      "name": "court_area",
+      "passed": true,
+      "detail": "projected court covers 15.0% of the frame (min 4%)",
+      "critical": true
+    },
+    {
+      "name": "court_visible",
+      "passed": true,
+      "detail": "14/14 model keypoints fall inside the frame",
+      "critical": true
+    },
+    {
+      "name": "perspective_plausible",
+      "passed": true,
+      "detail": "near baseline 1668px vs far baseline 337px (near must be >= 90% of far)",
+      "critical": true
+    },
+    {
+      "name": "measured_keypoints",
+      "passed": true,
+      "detail": "12/14 keypoints measured (min 6)",
+      "critical": true
+    },
+    {
+      "name": "keypoint_consistency",
+      "passed": true,
+      "detail": "median |detected - reprojected| = 0.62px",
+      "critical": false
+    },
+    {
+      "name": "line_support",
+      "passed": true,
+      "detail": "73.0% of model-line samples lie on white pixels (min 60%)",
+      "critical": true
+    }
+  ]
+}

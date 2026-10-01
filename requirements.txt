@@ -1,0 +1,35 @@
+# TennisTracker - macOS Apple Silicon (M-series) requirements
+#
+# Install (recommended in a fresh env, Python 3.10 - 3.12):
+#   python -m venv .venv && source .venv/bin/activate
+#   pip install --upgrade pip
+#   pip install -r requirements.txt
+#
+# The default PyPI wheels of torch/torchvision are arm64 builds with Metal
+# Performance Shaders (MPS) support, so `torch.device("mps")` works out of
+# the box - no special index URL is needed on macOS.
+#
+# Verify:  python -c "import torch; print(torch.backends.mps.is_available())"
+
+# --- core numerics / vision -------------------------------------------------
+numpy>=1.26,<3
+opencv-python>=4.9,<5          # arm64 wheel; use opencv-python-headless on servers
+scipy>=1.12                    # Kalman filtering / interpolation (Phase 3)
+
+# --- deep learning (TrackNet, Phase 2-3) -----------------------------------
+torch>=2.4,<3                  # >=2.4 for NumPy 2 compatibility and stable MPS ops
+torchvision>=0.19,<1
+
+# --- utilities -------------------------------------------------------------
+tqdm>=4.66
+pyyaml>=6.0
+pandas>=2.2                    # trajectory export (CSV)
+matplotlib>=3.8                # plots / debugging
+
+# --- testing ---------------------------------------------------------------
+pytest>=8.0
+
+# --- optional -----------------------------------------------------------------
+# ultralytics>=8.2             # YOLO pose/keypoint model for the deep-learning court
+#                              # detector and player tracking (MichlF/sports_object_detection)
+# filterpy>=1.4.5              # alternative Kalman filter implementation
