@@ -40,6 +40,7 @@ tensor pipeline and the network.
 | 1. Court detection & homography | `tennis_tracker/court/` (`geometry`, `line_detector`, `homography`, `calibration`, `manual`, `visualize`) | `calibrate.py` |
 | 2. Video -> 9-channel tensors | `tennis_tracker/inference/` (`video`, `preprocess`, `sequence`, `tensorize`, `pipeline`) | `prepare_video.py` |
 | 3. Inference, tracking, annotation | `tennis_tracker/model/` (`tracknet`, `weights`), `inference/detector`, `tennis_tracker/tracking/` (`kalman`, `tracker`, `annotate`) | `track.py`, `sweep_threshold.py` |
+| 4. Bounce detection, line calls | `tennis_tracker/tracking/` (`bounce`, `line_call`, `call_annotate`) | `line_calls.py` |
 
 ### Phase 1 – Court detection and homography
 1. Downscale the reference frame to 1280 px; build a white-line mask (luminance floor 120 plus
@@ -92,6 +93,49 @@ a rolling `(t-2, t-1, t)` buffer, channel concatenation to `(N, 9, H, W)` and tr
   H.264 (`avc1`) writer with `mp4v` fallback.
 
 ---
+
+### Phase 4 – Bounce detection and line calls
+In/out is decided at the bounce, the only moment the ball is on the ground and its image
+position maps exactly onto the court through the ground-plane homography (in flight the
+mapping is wrong, which is why per-frame court coordinates are only meaningful at bounces).
+`line_calls.py` works on `track.py`'s CSV, so no re-inference is needed (a few seconds per clip).
+
+1. **Repeated frames** (25 fps material in 30 fps files) are found from the video pixels and
+   dropped; the remaining frames are re-timed to their real capture times.
+2. **Bounce detection** – around every measurement the raw track is fitted with a continuous
+   piecewise-quadratic model whose velocity may jump at a knot (sub-frame search). A bounce
+   is an upward jump of the vertical image velocity (>= 3.5 m/s at the local image scale,
+   statistically significant) with an almost unchanged horizontal velocity, located on or
+   around the court, and consistent with the half it lands in: far half – the ball moves up
+   right after it and is not falling fast before it (serve contact); near half – it falls
+   right before it and its upward speed afterwards stays below the ball's restitution (~0.8)
+   times the downward speed before it (a racket hit adds energy). Each event is judged by
+   its strongest knot, and a second event on the same half within 1 s (a racket hit or a
+   second bounce) is dropped.
+3. **Localisation** – the knot and position are refined with independent curvature on each
+   side when enough points exist; the ball centre is shifted down by its radius to the
+   contact point, mapped to metres, and its covariance (fit + tracking noise + calibration
+   error) is propagated through the homography Jacobian.
+4. **Line call** – a ball touching a line is in. The calibration aligns the model with the
+   *centres* of the painted lines, so the boundary is half a line width outside them
+   (baselines 10 cm, other lines 5 cm), plus a 2 cm contact-patch half-width. The signed
+   clearance to the nearest boundary gives **IN** / **OUT**, or **CLOSE** when it is within
+   `max(2 sigma, 3 cm)` of the line, sigma being the position uncertainty perpendicular to
+   that line. Default court: singles (`--game doubles` available). Service boxes are not
+   applied to serves yet.
+
+Validation:
+
+| set | bounces | found | false positives |
+|---|---|---|---|
+| simulation (3-D flights, pinhole camera, 0.7 px noise, 120 runs) | 120 | 120 | 0 |
+| 8 real clips, every detection checked frame by frame | 69 | 69 | 0 accepted |
+
+Simulated accuracy (1 sigma): near half 0.8 cm lateral / 4.7 cm depth, far half 1.3 cm /
+13 cm; the reported uncertainty matches these within ~20 %. Known limitations: recall is
+lower on small far courts in wide-angle amateur footage; a slow volley (no bounce before it)
+can pass as a bounce; a net-cord ball that drops on the hitter's side is judged by geometry
+only; on very low cameras far-half positions are extrapolated (see test7) and stay CLOSE.
 
 ## 2. Environment and hardware
 
@@ -224,7 +268,22 @@ python prepare_video.py --video match.mp4 --calibration data/calibration/match/c
 
 Reports tensor shape, dtype, device, value range and throughput without running the network.
 
-### 4.5 From Python
+### 4.5 Line calls (`line_calls.py`)
+
+```bash
+# after track.py: bounces, IN / OUT / CLOSE, annotated video + events CSV
+python line_calls.py --video match.mp4 --calibration data/calibration/match/calibration.json
+
+python line_calls.py --video match.mp4 --calibration ... --game doubles
+python line_calls.py --video match.mp4 --calibration ... --no-video        # CSV only
+```
+
+Options: `--track-csv` (default `data/output/<video>_tracked.csv`), `--game singles|doubles`,
+`--output`, `--events-csv`, `--no-video`, `--hold` (seconds a call stays on screen),
+`--skip-duplicate-check` (native-rate footage only). The calibration gate runs first.
+Exit codes: `0` ok, `1` calibration gate failed, `2` missing input.
+
+### 4.6 From Python
 
 ```python
 from tennis_tracker.court import require_calibration
@@ -265,6 +324,8 @@ court_xy_m = cal.pixel_to_court([[p.x, p.y] for p in points if p.has_position])
 | `<video>_tracked.mp4` | H.264 video: ball marker (green detected, yellow predicted), fading trail, calibrated minimap top-right with the ball's ground projection, HUD `frame / status / confidence / court (x m, y m)`, optional court overlay |
 | `<video>_tracked.csv` | one row per tracked frame: `frame, status, x_px, y_px, confidence, raw_x_px, raw_y_px, court_x_m, court_y_m, segment` |
 | `raw_detections*.csv`, `threshold_sweep*.csv` | sweep-tool evidence |
+| `<video>_calls.mp4` | ball trail, a ground marker at every bounce (green IN, red OUT, amber CLOSE) with its distance to the line, a call banner, and a minimap collecting all bounces |
+| `<video>_calls.csv` | one row per bounce: `bounce, frame, time_s, half, court_x_m, court_y_m, call, leaning, clearance_cm, nearest_line, sigma_cm, close_band_cm, game, x_px, y_px, jump_vy_mps, tstat` |
 
 Court coordinates are ground-plane projections through the homography: a ball in flight maps
 beyond its true ground position (often past the far baseline). That is the intended input for a
@@ -285,14 +346,16 @@ Validation results with `model_best.pt`, threshold 0.5:
 ## 6. Testing and profiling
 
 ```bash
-pytest -q          # 91 tests, ~20 s on CPU (MPS cases run when available)
+pytest -q          # 115 tests, ~20 s on CPU (MPS cases run when available)
 ```
 
 The suite covers geometry, homography estimation and every verification check, the classical
 detector on rendered synthetic courts, checkpoint loading (exact, wrapped, renamed, truncated),
 heat-map peak extraction, the Kalman filter and tracker (gaps, outliers, re-initialisation,
-candidate association, ROI), annotation and video writing, the CLI end to end, and an "oracle"
-test that recovers a known synthetic trajectory through the whole chain without any weights.
+candidate association, ROI), annotation and video writing, the CLI end to end, an "oracle"
+test that recovers a known synthetic trajectory through the whole chain without any weights,
+and bounce detection / line calls against a 3-D ball-flight and pinhole-camera simulator
+(near and far bounces, racket hits that must not count, 25-in-30 fps repeated frames, line rules).
 
 Profiling with `python -m cProfile -o run.prof track.py ...` on a 756-frame 1080p clip
 (153 s wall clock): project Python code accounts for about 2 % of the time; 98 % is spent in
@@ -315,16 +378,17 @@ TennisTracker/
 ├── prepare_video.py        Phase 2 CLI (tensor pipeline only)
 ├── track.py                Phase 3 CLI (end to end)
 ├── sweep_threshold.py      confidence-threshold sweep
+├── line_calls.py           Phase 4 CLI (bounces, IN / OUT / CLOSE)
 ├── tennis_tracker/
 │   ├── court/              geometry, line_detector, homography, calibration, manual, visualize
 │   ├── inference/          video, preprocess, sequence, tensorize, pipeline, detector
 │   ├── model/              tracknet (v1 / v2), weights
-│   ├── tracking/           kalman, tracker, annotate
+│   ├── tracking/           kalman, tracker, annotate, bounce, line_call, call_annotate
 │   └── device.py
-├── tests/                  91 pytest cases (+ synthetic court renderer)
+├── tests/                  115 pytest cases (+ synthetic court renderer, 3-D flight simulator)
 ├── weights/                model_best.pt, README.md, SHA256SUMS   (*.pt git-ignored)
 ├── data/calibration/       one folder per camera position
-├── data/output/            tracked videos, CSVs, sweep tables      (git-ignored)
+├── data/output/            tracked / calls videos, CSVs, sweep tables (git-ignored)
 └── requirements.txt, pytest.ini, .gitignore
 ```
 
